@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/google/go-github/github"
 	"github.com/hootsuite/atlantis/server/events/models"
@@ -131,6 +132,23 @@ func (c *CommandHandler) run(ctx *CommandContext) {
 		return
 	}
 	defer c.EnvLocker.Unlock(ctx.BaseRepo.FullName, ctx.Command.Environment, ctx.Pull.Num)
+
+	// check if we're running in ECS and try to fetch IAM credentials for task's role
+	credentialsRelativeUri := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+	if credentialsRelativeUri != "" {
+		err := handleEcsCredentials(credentialsRelativeUri)
+		if err != nil {
+			ctx.Log.Warn("failed to fetch ECS credentials")
+			return
+		}
+	}
+
+	defer func() {
+		err := os.RemoveAll("/home/atlantis/.aws")
+		if err != nil {
+			ctx.Log.Err("failed to remove /home/atlantis/.aws/credentials")
+		}
+	}()
 
 	var cr CommandResponse
 	switch ctx.Command.Name {

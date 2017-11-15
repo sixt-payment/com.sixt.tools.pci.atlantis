@@ -103,6 +103,7 @@ func (c *Client) RunCommandWithVersion(log *logging.SimpleLogger, path string, a
 // applied to the init command.
 func (c *Client) RunInitAndEnv(log *logging.SimpleLogger, path string, env string, extraInitArgs []string, version *version.Version) ([]string, error) {
 	var outputs []string
+
 	// run terraform init
 	output, err := c.RunCommandWithVersion(log, path, append([]string{"init", "-no-color"}, extraInitArgs...), version, env)
 	outputs = append(outputs, output)
@@ -122,5 +123,6 @@ func (c *Client) RunInitAndEnv(log *logging.SimpleLogger, path string, env strin
 			return outputs, err
 		}
 	}
+
 	return outputs, nil
 }
