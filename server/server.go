@@ -210,6 +210,7 @@ func (s *Server) Start() error {
 	s.Router.PathPrefix("/static/").Handler(http.FileServer(&assetfs.AssetFS{Asset: static.Asset, AssetDir: static.AssetDir, AssetInfo: static.AssetInfo}))
 	s.Router.HandleFunc("/events", s.postEvents).Methods("POST")
 	s.Router.HandleFunc("/locks", s.DeleteLockRoute).Methods("DELETE").Queries("id", "{id:.*}")
+	s.Router.HandleFunc("/health", s.Health).Methods("GET")
 	lockRoute := s.Router.HandleFunc("/lock", s.GetLockRoute).Methods("GET").Queries("id", "{id}").Name(LockRouteName)
 	// function that planExecutor can use to construct detail view url
 	// injecting this here because this is the earliest routes are created
@@ -248,6 +249,11 @@ func (s *Server) Index(w http.ResponseWriter, _ *http.Request) {
 		})
 	}
 	s.IndexTemplate.Execute(w, results) // nolint: errcheck
+}
+
+func (s *Server) Health(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	return
 }
 
 func (s *Server) GetLockRoute(w http.ResponseWriter, r *http.Request) {
