@@ -21,7 +21,7 @@ type RequestLogger struct {
 func (l *RequestLogger) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	next(rw, r)
 	res := rw.(negroni.ResponseWriter)
-	if !strings.HasPrefix(r.URL.RequestURI(), "/static") {
+	if !strings.HasPrefix(r.URL.RequestURI(), "/static") && !strings.HasPrefix(r.URL.RequestURI(), "/health") {
 		l.logger.Info("%d | %s %s", res.Status(), r.Method, r.URL.RequestURI())
 	}
 }
