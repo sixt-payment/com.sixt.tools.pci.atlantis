@@ -1,0 +1,27 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Creating Image Tag using git hash"
+      - echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" > git_hash
+      - echo "Creating required path for Go Project"
+      - export REPO_DIR="/go/src/github.com/hootsuite/$SERVICE_NAME"
+      - mkdir -p "$REPO_DIR"
+  build:
+    commands:
+      - echo "Copying source artifacts to Project dir"
+      - ln -s $CODEBUILD_SRC_DIR/* "$REPO_DIR"
+      - cd "$REPO_DIR"
+      - echo "Building the go binary"
+      - make build-service
+      - cp atlantis $CODEBUILD_SRC_DIR/atlantis
+      - echo "Listing SRC_DIR contents for good measure"
+      - ls -lah
+artifacts:
+  files:
+    - Dockerfile
+    - git_hash
+    - buildspec_docker.yml
+    - atlantis
+    - docker-entrypoint.sh

@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Sixt-Payment Docker Registry"
+      - docker login -u push $DOCKER_REGISTRY_URL -p $REGISTRY_PUSH_PASSWORD
+      - export IMAGE_TAG=$(cat git_hash)
+      - export IMAGE="$DOCKER_REGISTRY_URL/$SERVICE_NAME:$IMAGE_TAG"
+  build:
+    commands:
+      - echo "Listing directory contents"
+      - echo $(pwd) && ls -lah **
+      - chmod +x docker-entrypoint.sh
+      - echo "Building the Docker image..."          
+      - docker build -t $SERVICE_NAME .
+      - docker tag $SERVICE_NAME:latest $IMAGE
+  post_build:
+    commands:
+      - 'echo "{\"image\": \"$IMAGE\"}" > deploy.json'
+      - echo Build completed on `date +'%s'`
+      - echo "Pushing the Docker image..."
+      - docker push $IMAGE
+artifacts:
+  files:
+    - deploy.json
