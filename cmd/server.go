@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"regexp"
 	"strings"
 
 	"github.com/hootsuite/atlantis/server"
@@ -18,20 +19,23 @@ import (
 // 2. Add a new field to server.Config and set the mapstructure tag equal to the flag name.
 // 3. Add your flag's description etc. to the stringFlags, intFlags, or boolFlags slices.
 const (
-	AtlantisURLFlag     = "atlantis-url"
-	ConfigFlag          = "config"
-	DataDirFlag         = "data-dir"
-	GHHostnameFlag      = "gh-hostname"
-	GHTokenFlag         = "gh-token"
-	GHUserFlag          = "gh-user"
-	GHWebHookSecret     = "gh-webhook-secret"
-	GitlabHostnameFlag  = "gitlab-hostname"
-	GitlabTokenFlag     = "gitlab-token"
-	GitlabUserFlag      = "gitlab-user"
-	GitlabWebHookSecret = "gitlab-webhook-secret"
-	LogLevelFlag        = "log-level"
-	PortFlag            = "port"
-	RequireApprovalFlag = "require-approval"
+	AtlantisURLFlag      = "atlantis-url"
+	ConfigFlag           = "config"
+	DataDirFlag          = "data-dir"
+	GHHostnameFlag       = "gh-hostname"
+	GHTokenFlag          = "gh-token"
+	GHUserFlag           = "gh-user"
+	GHWebHookSecret      = "gh-webhook-secret"
+	GitlabHostnameFlag   = "gitlab-hostname"
+	GitlabTokenFlag      = "gitlab-token"
+	GitlabUserFlag       = "gitlab-user"
+	GitlabWebHookSecret  = "gitlab-webhook-secret"
+	LogLevelFlag         = "log-level"
+	PortFlag             = "port"
+	RequireApprovalFlag  = "require-approval"
+	EnvDetectionWorkflow = "environment-detection-workflow"
+	GitFlowEnvDir        = "gitflow-environment-dir"
+	GitFlowEnvBranchMap  = "gitflow-environment-branch-map"
 )
 
 var stringFlags = []stringFlag{
@@ -91,6 +95,19 @@ var stringFlags = []stringFlag{
 		env: "ATLANTIS_GITLAB_WEBHOOK_SECRET",
 	},
 	{
+		name: GitFlowEnvDir,
+		description: "Directory relative to the repo root which holds the environment configuration. Leave empty to reference the root dir" +
+			"Can also be specified via the ATLANTIS_GITFLOW_ENV_DIR environment variable",
+		env: "ATLANTIS_GITFLOW_ENV_DIR",
+	},
+	{
+		name: EnvDetectionWorkflow,
+		description: "Select how atlantis should determine the environment to execute. Either modifiedfiles or gitflow" +
+			"Can also be specified via the ATLANTIS_ENV_DETECTION_WORKFLOW environment variable",
+		env:   "ATLANTIS_ENV_DETECTION_WORKFLOW",
+		value: "modifiedfiles",
+	},
+	{
 		name:        LogLevelFlag,
 		description: "Log level. Either debug, info, warn, or error.",
 		value:       "info",
@@ -111,6 +128,13 @@ var intFlags = []intFlag{
 	},
 }
 
+var stringSetFlags = []stringSetFlag{
+	stringSetFlag{
+		name:        GitFlowEnvBranchMap,
+		description: "A list of environment to branch mappings in the form of prod:master",
+	},
+}
+
 type stringFlag struct {
 	name        string
 	description string
@@ -126,6 +150,12 @@ type boolFlag struct {
 	name        string
 	description string
 	value       bool
+}
+type stringSetFlag struct {
+	name        string
+	description string
+	value       []string
+	env         string
 }
 
 // ServerCmd is an abstraction that helps us test. It allows
@@ -204,6 +234,12 @@ Config file values are overridden by environment variables which in turn are ove
 		s.Viper.BindPFlag(f.name, c.Flags().Lookup(f.name)) // nolint: errcheck
 	}
 
+	// Set stringsetflags flags.
+	for _, f := range stringSetFlags {
+		c.Flags().StringSlice(f.name, f.value, f.description)
+		s.Viper.BindPFlag(f.name, c.Flags().Lookup(f.name))
+	}
+
 	return c
 }
 
@@ -266,6 +302,21 @@ func validate(config server.Config) error {
 	if config.GithubUser == "" && config.GitlabUser == "" {
 		return vcsErr
 	}
+
+	// Check if EnvDetectionWorkflow is set correctly
+	envDW := config.EnvDetectionWorkflow
+	if envDW != "modifiedfiles" && envDW != "gitflow" {
+		return errors.New("invalid env detection workflow: not one of modifiedfiles, gitflow")
+	}
+
+	// Check if GitFlowEnvDirMapping has the correct syntax
+	sep := regexp.MustCompile(":")
+	for _, val := range config.GitflowEnvBranchMapping {
+		if len(sep.FindAllStringIndex(val, -1)) != 1 {
+			return fmt.Errorf("Invalid GitflowEnvBranchMapping argument %s. Must be env:branch", val)
+		}
+	}
+
 	return nil
 }
 

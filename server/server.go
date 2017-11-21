@@ -49,21 +49,24 @@ type Server struct {
 // The mapstructure tags correspond to flags in cmd/server.go and are used when
 // the config is parsed from a YAML file.
 type Config struct {
-	AtlantisURL         string          `mapstructure:"atlantis-url"`
-	DataDir             string          `mapstructure:"data-dir"`
-	GithubHostname      string          `mapstructure:"gh-hostname"`
-	GithubToken         string          `mapstructure:"gh-token"`
-	GithubUser          string          `mapstructure:"gh-user"`
-	GithubWebHookSecret string          `mapstructure:"gh-webhook-secret"`
-	GitlabHostname      string          `mapstructure:"gitlab-hostname"`
-	GitlabToken         string          `mapstructure:"gitlab-token"`
-	GitlabUser          string          `mapstructure:"gitlab-user"`
-	GitlabWebHookSecret string          `mapstructure:"gitlab-webhook-secret"`
-	LogLevel            string          `mapstructure:"log-level"`
-	Port                int             `mapstructure:"port"`
-	RequireApproval     bool            `mapstructure:"require-approval"`
-	SlackToken          string          `mapstructure:"slack-token"`
-	Webhooks            []WebhookConfig `mapstructure:"webhooks"`
+	AtlantisURL             string          `mapstructure:"atlantis-url"`
+	DataDir                 string          `mapstructure:"data-dir"`
+	GithubHostname          string          `mapstructure:"gh-hostname"`
+	GithubToken             string          `mapstructure:"gh-token"`
+	GithubUser              string          `mapstructure:"gh-user"`
+	GithubWebHookSecret     string          `mapstructure:"gh-webhook-secret"`
+	GitlabHostname          string          `mapstructure:"gitlab-hostname"`
+	GitlabToken             string          `mapstructure:"gitlab-token"`
+	GitlabUser              string          `mapstructure:"gitlab-user"`
+	GitlabWebHookSecret     string          `mapstructure:"gitlab-webhook-secret"`
+	LogLevel                string          `mapstructure:"log-level"`
+	Port                    int             `mapstructure:"port"`
+	RequireApproval         bool            `mapstructure:"require-approval"`
+	SlackToken              string          `mapstructure:"slack-token"`
+	Webhooks                []WebhookConfig `mapstructure:"webhooks"`
+	GitflowEnvDir           string          `mapstructure:"gitflow-environment-dir"`
+	GitflowEnvBranchMapping []string        `mapstructure:"gitflow-environment-branch-map"`
+	EnvDetectionWorkflow    string          `mapstructure:"environment-detection-workflow"`
 }
 
 type WebhookConfig struct {
@@ -142,14 +145,22 @@ func NewServer(config Config) (*Server, error) {
 		ProjectPreExecute: projectPreExecute,
 		Webhooks:          webhooksManager,
 	}
+	wflow := events.ModifiedFilesWorkflow
+	if config.EnvDetectionWorkflow == string(events.GitFlowWorkflow) {
+		wflow = events.GitFlowWorkflow
+	}
+
 	planExecutor := &events.PlanExecutor{
-		VCSClient:         vcsClient,
-		Terraform:         terraformClient,
-		Run:               run,
-		Workspace:         workspace,
-		ProjectPreExecute: projectPreExecute,
-		Locker:            lockingClient,
-		ProjectFinder:     &events.ProjectFinder{},
+		VCSClient:               vcsClient,
+		Terraform:               terraformClient,
+		Run:                     run,
+		Workspace:               workspace,
+		ProjectPreExecute:       projectPreExecute,
+		Locker:                  lockingClient,
+		ProjectFinder:           &events.ProjectFinder{},
+		ConfiguredWorkflow:      wflow,
+		GitflowEnvDir:           config.GitflowEnvDir,
+		GitflowEnvBranchMapping: config.GitflowEnvBranchMapping,
 	}
 	helpExecutor := &events.HelpExecutor{}
 	pullClosedExecutor := &events.PullClosedExecutor{
@@ -177,6 +188,7 @@ func NewServer(config Config) (*Server, error) {
 		EnvLocker:                concurrentRunLocker,
 		MarkdownRenderer:         markdownRenderer,
 		Logger:                   logger,
+		ConfiguredWorkflow:       wflow,
 	}
 	eventsController := &EventsController{
 		CommandRunner:          commandHandler,
