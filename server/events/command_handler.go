@@ -13,7 +13,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-//go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_command_runner.go CommandRunner
+// Workflow represents the atlantis project determination workflow being used
+type Workflow string
+
+const (
+	ModifiedFilesWorkflow Workflow = "modifiedfiles"
+	GitFlowWorkflow       Workflow = "gitflow"
+)
+
+//go:generate pegomock generate --use-experimental-model-gen --package mocks -o mocks/mock_command_runner.go CommandRunner
 
 type CommandRunner interface {
 	ExecuteCommand(baseRepo models.Repo, headRepo models.Repo, user models.User, pullNum int, cmd *Command, vcsHost vcs.Host)
@@ -45,6 +53,7 @@ type CommandHandler struct {
 	EnvLocker                EnvLocker
 	MarkdownRenderer         *MarkdownRenderer
 	Logger                   logging.SimpleLogging
+	ConfiguredWorkflow       Workflow
 }
 
 // ExecuteCommand executes the command
@@ -55,6 +64,12 @@ func (c *CommandHandler) ExecuteCommand(baseRepo models.Repo, headRepo models.Re
 		pull, headRepo, err = c.getGithubData(baseRepo, pullNum)
 	} else if vcsHost == vcs.Gitlab {
 		pull, err = c.getGitlabData(baseRepo.FullName, pullNum)
+	}
+
+	// FIXME: this is a bodge to bruteforce the right command env name in case gitflow is used
+	// Ideally it should happen in the command parser
+	if c.ConfiguredWorkflow == GitFlowWorkflow {
+		cmd.Environment = pull.BaseBranch
 	}
 
 	log := c.buildLogger(baseRepo.FullName, pullNum)
