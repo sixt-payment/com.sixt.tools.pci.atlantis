@@ -44,6 +44,8 @@ type PullRequest struct {
 	// Gitlab supports an additional "merged" state but Github doesn't so we map
 	// merged to Closed.
 	State PullRequestState
+	// BaseBranch is the current BaseBranch of PR
+	BaseBranch string
 }
 
 type PullRequestState int

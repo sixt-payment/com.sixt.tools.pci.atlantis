@@ -145,6 +145,10 @@ func (e *EventParser) ParseGithubPull(pull *github.PullRequest) (models.PullRequ
 	if branch == "" {
 		return pullModel, headRepoModel, errors.New("head.ref is null")
 	}
+	baseBranch := pull.Base.GetRef()
+	if baseBranch == "" {
+		return pullModel, headRepoModel, errors.New("base.ref is null")
+	}
 	authorUsername := pull.User.GetLogin()
 	if authorUsername == "" {
 		return pullModel, headRepoModel, errors.New("user.login is null")
@@ -167,6 +171,7 @@ func (e *EventParser) ParseGithubPull(pull *github.PullRequest) (models.PullRequ
 	return models.PullRequest{
 		Author:     authorUsername,
 		Branch:     branch,
+		BaseBranch: baseBranch,
 		HeadCommit: commit,
 		URL:        url,
 		Num:        num,
