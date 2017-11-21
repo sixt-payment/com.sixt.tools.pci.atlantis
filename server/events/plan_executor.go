@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hootsuite/atlantis/server/events/locking"
 	"github.com/hootsuite/atlantis/server/events/models"
@@ -27,14 +28,17 @@ const atlantisUserTFVar = "atlantis_user"
 
 // PlanExecutor handles everything related to running terraform plan.
 type PlanExecutor struct {
-	VCSClient         vcs.ClientProxy
-	Terraform         terraform.Runner
-	Locker            locking.Locker
-	LockURL           func(id string) (url string)
-	Run               run.Runner
-	Workspace         Workspace
-	ProjectPreExecute ProjectPreExecutor
-	ProjectFinder     ModifiedProjectFinder
+	VCSClient               vcs.ClientProxy
+	Terraform               terraform.Runner
+	Locker                  locking.Locker
+	LockURL                 func(id string) (url string)
+	Run                     run.Runner
+	Workspace               Workspace
+	ProjectPreExecute       ProjectPreExecutor
+	ProjectFinder           ModifiedProjectFinder
+	ConfiguredWorkflow      Workflow
+	GitflowEnvDir           string
+	GitflowEnvBranchMapping []string
 }
 
 type PlanSuccess struct {
@@ -47,13 +51,45 @@ func (p *PlanExecutor) SetLockURL(f func(id string) (url string)) {
 }
 
 func (p *PlanExecutor) Execute(ctx *CommandContext) CommandResponse {
-	// figure out what projects have been modified so we know where to run plan
-	modifiedFiles, err := p.VCSClient.GetModifiedFiles(ctx.BaseRepo, ctx.Pull, ctx.VCSHost)
-	if err != nil {
-		return CommandResponse{Error: errors.Wrap(err, "getting modified files")}
+	var projects []models.Project
+
+	if p.ConfiguredWorkflow == ModifiedFilesWorkflow {
+		// figure out what projects have been modified so we know where to run plan
+		modifiedFiles, err := p.VCSClient.GetModifiedFiles(ctx.BaseRepo, ctx.Pull, ctx.VCSHost)
+		if err != nil {
+			return CommandResponse{Error: errors.Wrap(err, "getting modified files")}
+		}
+		ctx.Log.Info("found %d files modified in this pull request", len(modifiedFiles))
+		projects = p.ProjectFinder.FindModified(ctx.Log, modifiedFiles, ctx.BaseRepo.FullName)
+
+	} else if p.ConfiguredWorkflow == GitFlowWorkflow {
+		// Check if we have a special mapping for this branch
+		// If there are multiple mappings, multiple projects will be created
+		var env, branch string
+		var found bool
+		for _, m := range p.GitflowEnvBranchMapping {
+			parts := strings.Split(m, ":")
+			env = parts[0]
+			branch = parts[1]
+
+			if branch == ctx.Pull.BaseBranch {
+				found = true
+				projects = append(projects, models.NewProject(ctx.BaseRepo.FullName, filepath.Join(
+					p.GitflowEnvDir, env)))
+				ctx.Log.Info("created new project %s, env path: %s", ctx.BaseRepo.FullName, filepath.Join(
+					p.GitflowEnvDir, env))
+			}
+
+		}
+		// If no mappings are found, use the default PR base branch
+		if !found {
+			projects = append(projects, models.NewProject(ctx.BaseRepo.FullName, filepath.Join(
+				p.GitflowEnvDir, ctx.Pull.BaseBranch)))
+			ctx.Log.Info("created new project %s, env path: %s", ctx.BaseRepo.FullName, filepath.Join(
+				p.GitflowEnvDir, ctx.Pull.BaseBranch))
+		}
 	}
-	ctx.Log.Info("found %d files modified in this pull request", len(modifiedFiles))
-	projects := p.ProjectFinder.FindModified(ctx.Log, modifiedFiles, ctx.BaseRepo.FullName)
+
 	if len(projects) == 0 {
 		return CommandResponse{Failure: "No Terraform files were modified."}
 	}
