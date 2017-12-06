@@ -17,20 +17,22 @@ import (
 // 2. Add a new field to server.Config and set the mapstructure tag equal to the flag name.
 // 3. Add your flag's description etc. to the stringFlags, intFlags, or boolFlags slices.
 const (
-	AtlantisURLFlag     = "atlantis-url"
-	ConfigFlag          = "config"
-	DataDirFlag         = "data-dir"
-	GHHostnameFlag      = "gh-hostname"
-	GHTokenFlag         = "gh-token"
-	GHUserFlag          = "gh-user"
-	GHWebHookSecret     = "gh-webhook-secret" // nolint: gas
-	GitlabHostnameFlag  = "gitlab-hostname"
-	GitlabTokenFlag     = "gitlab-token"
-	GitlabUserFlag      = "gitlab-user"
-	GitlabWebHookSecret = "gitlab-webhook-secret"
-	LogLevelFlag        = "log-level"
-	PortFlag            = "port"
-	RequireApprovalFlag = "require-approval"
+	AtlantisURLFlag             = "atlantis-url"
+	ConfigFlag                  = "config"
+	DataDirFlag                 = "data-dir"
+	GHHostnameFlag              = "gh-hostname"
+	GHTokenFlag                 = "gh-token"
+	GHUserFlag                  = "gh-user"
+	GHWebHookSecret             = "gh-webhook-secret" // nolint: gas
+	GitlabHostnameFlag          = "gitlab-hostname"
+	GitlabTokenFlag             = "gitlab-token"
+	GitlabUserFlag              = "gitlab-user"
+	GitlabWebHookSecret         = "gitlab-webhook-secret"
+	LogLevelFlag                = "log-level"
+	PortFlag                    = "port"
+	RequireApprovalFlag         = "require-approval"
+	RequireExternalApprovalFlag = "require-external-approval"
+	ApprovalURLFlag             = "approval-url"
 )
 
 var stringFlags = []stringFlag{
@@ -94,12 +96,20 @@ var stringFlags = []stringFlag{
 		description: "Log level. Either debug, info, warn, or error.",
 		value:       "info",
 	},
+	{
+		name:        ApprovalURLFlag,
+		description: "External endpoint to check for approval status.",
+	},
 }
 var boolFlags = []boolFlag{
 	{
 		name:        RequireApprovalFlag,
 		description: "Require pull requests to be \"Approved\" before allowing the apply command to be run.",
 		value:       false,
+	},
+	{
+		name:        RequireExternalApprovalFlag,
+		description: "Require plan to be approved using external endpoint.",
 	},
 }
 var intFlags = []intFlag{
@@ -266,6 +276,11 @@ func (s *ServerCmd) validate(config server.Config) error {
 	if config.GithubUser == "" && config.GitlabUser == "" {
 		return vcsErr
 	}
+
+	if config.RequireExternalApproval && config.ApprovalURL == "" {
+		return fmt.Errorf("--%s requires --%s to be set", RequireApprovalFlag, ApprovalURLFlag)
+	}
+
 	return nil
 }
 

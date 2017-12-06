@@ -64,6 +64,9 @@ type Config struct {
 	RequireApproval bool            `mapstructure:"require-approval"`
 	SlackToken      string          `mapstructure:"slack-token"`
 	Webhooks        []WebhookConfig `mapstructure:"webhooks"`
+	// RequireExternalApproval is whether to call ApprovalURL
+	RequireExternalApproval bool   `mapstructure:"require-external-approval"`
+	ApprovalURL             string `mapstructure:"approval-url"`
 }
 
 // WebhookConfig is nested within Config. It's used to configure webhooks.
@@ -144,13 +147,15 @@ func NewServer(config Config) (*Server, error) {
 		Terraform:    terraformClient,
 	}
 	applyExecutor := &events.ApplyExecutor{
-		VCSClient:         vcsClient,
-		Terraform:         terraformClient,
-		RequireApproval:   config.RequireApproval,
-		Run:               run,
-		Workspace:         workspace,
-		ProjectPreExecute: projectPreExecute,
-		Webhooks:          webhooksManager,
+		VCSClient:               vcsClient,
+		Terraform:               terraformClient,
+		RequireApproval:         config.RequireApproval,
+		RequireExternalApproval: config.RequireExternalApproval,
+		ApprovalURL:             config.ApprovalURL,
+		Run:                     run,
+		Workspace:               workspace,
+		ProjectPreExecute:       projectPreExecute,
+		Webhooks:                webhooksManager,
 	}
 	planExecutor := &events.PlanExecutor{
 		VCSClient:         vcsClient,
