@@ -19,29 +19,35 @@ import (
 // 2. Add a new field to server.Config and set the mapstructure tag equal to the flag name.
 // 3. Add your flag's description etc. to the stringFlags, intFlags, or boolFlags slices.
 const (
-	AtlantisURLFlag      = "atlantis-url"
-	ConfigFlag           = "config"
-	DataDirFlag          = "data-dir"
-	GHHostnameFlag       = "gh-hostname"
-	GHTokenFlag          = "gh-token"
-	GHUserFlag           = "gh-user"
-	GHWebHookSecret      = "gh-webhook-secret"
-	GitlabHostnameFlag   = "gitlab-hostname"
-	GitlabTokenFlag      = "gitlab-token"
-	GitlabUserFlag       = "gitlab-user"
-	GitlabWebHookSecret  = "gitlab-webhook-secret"
-	LogLevelFlag         = "log-level"
-	PortFlag             = "port"
-	RequireApprovalFlag  = "require-approval"
-	EnvDetectionWorkflow = "environment-detection-workflow"
-	GitFlowEnvDir        = "gitflow-environment-dir"
-	GitFlowEnvBranchMap  = "gitflow-environment-branch-map"
+	AtlantisURLFlag             = "atlantis-url"
+	ApprovalURLFlag             = "approval-url"
+	ConfigFlag                  = "config"
+	DataDirFlag                 = "data-dir"
+	GHHostnameFlag              = "gh-hostname"
+	GHTokenFlag                 = "gh-token"
+	GHUserFlag                  = "gh-user"
+	GHWebHookSecret             = "gh-webhook-secret"
+	GitlabHostnameFlag          = "gitlab-hostname"
+	GitlabTokenFlag             = "gitlab-token"
+	GitlabUserFlag              = "gitlab-user"
+	GitlabWebHookSecret         = "gitlab-webhook-secret"
+	LogLevelFlag                = "log-level"
+	PortFlag                    = "port"
+	RequireApprovalFlag         = "require-approval"
+	RequireExternalApprovalFlag = "require-external-approval"
+	EnvDetectionWorkflow        = "environment-detection-workflow"
+	GitFlowEnvDir               = "gitflow-environment-dir"
+	GitFlowEnvBranchMap         = "gitflow-environment-branch-map"
 )
 
 var stringFlags = []stringFlag{
 	{
 		name:        AtlantisURLFlag,
 		description: "URL that Atlantis can be reached at. Defaults to http://$(hostname):$port where $port is from --" + PortFlag + ".",
+	},
+	{
+		name:        ApprovalURLFlag,
+		description: "URL for approval endpoint.",
 	},
 	{
 		name:        ConfigFlag,
@@ -117,6 +123,11 @@ var boolFlags = []boolFlag{
 	{
 		name:        RequireApprovalFlag,
 		description: "Require pull requests to be \"Approved\" before allowing the apply command to be run.",
+		value:       false,
+	},
+	{
+		name:        RequireExternalApprovalFlag,
+		description: "Require external approval for pull requests.",
 		value:       false,
 	},
 }
@@ -315,6 +326,10 @@ func validate(config server.Config) error {
 		if len(sep.FindAllStringIndex(val, -1)) != 1 {
 			return fmt.Errorf("Invalid GitflowEnvBranchMapping argument %s. Must be env:branch", val)
 		}
+	}
+
+	if config.RequireExternalApproval && config.ApprovalURL == "" {
+		return fmt.Errorf("--%s requires --%s to be set", RequireApprovalFlag, ApprovalURLFlag)
 	}
 
 	return nil
