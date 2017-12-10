@@ -50,6 +50,7 @@ type Server struct {
 // the config is parsed from a YAML file.
 type Config struct {
 	AtlantisURL             string          `mapstructure:"atlantis-url"`
+	ApprovalURL             string          `mapstructure:"approval-url"`
 	DataDir                 string          `mapstructure:"data-dir"`
 	GithubHostname          string          `mapstructure:"gh-hostname"`
 	GithubToken             string          `mapstructure:"gh-token"`
@@ -62,6 +63,7 @@ type Config struct {
 	LogLevel                string          `mapstructure:"log-level"`
 	Port                    int             `mapstructure:"port"`
 	RequireApproval         bool            `mapstructure:"require-approval"`
+	RequireExternalApproval bool            `mapstructure:"require-external-approval"`
 	SlackToken              string          `mapstructure:"slack-token"`
 	Webhooks                []WebhookConfig `mapstructure:"webhooks"`
 	GitflowEnvDir           string          `mapstructure:"gitflow-environment-dir"`
@@ -137,13 +139,15 @@ func NewServer(config Config) (*Server, error) {
 		Terraform:    terraformClient,
 	}
 	applyExecutor := &events.ApplyExecutor{
-		VCSClient:         vcsClient,
-		Terraform:         terraformClient,
-		RequireApproval:   config.RequireApproval,
-		Run:               run,
-		Workspace:         workspace,
-		ProjectPreExecute: projectPreExecute,
-		Webhooks:          webhooksManager,
+		VCSClient:               vcsClient,
+		Terraform:               terraformClient,
+		RequireApproval:         config.RequireApproval,
+		RequireExternalApproval: config.RequireExternalApproval,
+		ApprovalURL:             config.ApprovalURL,
+		Run:                     run,
+		Workspace:               workspace,
+		ProjectPreExecute:       projectPreExecute,
+		Webhooks:                webhooksManager,
 	}
 	wflow := events.ModifiedFilesWorkflow
 	if config.EnvDetectionWorkflow == string(events.GitFlowWorkflow) {

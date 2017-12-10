@@ -1,8 +1,13 @@
 package events
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -16,13 +21,66 @@ import (
 )
 
 type ApplyExecutor struct {
-	VCSClient         vcs.ClientProxy
-	Terraform         *terraform.Client
-	RequireApproval   bool
-	Run               *run.Run
-	Workspace         Workspace
-	ProjectPreExecute *ProjectPreExecute
-	Webhooks          webhooks.Sender
+	VCSClient               vcs.ClientProxy
+	Terraform               *terraform.Client
+	RequireApproval         bool
+	RequireExternalApproval bool
+	ApprovalURL             string
+	Run                     *run.Run
+	Workspace               Workspace
+	ProjectPreExecute       *ProjectPreExecute
+	Webhooks                webhooks.Sender
+}
+
+type externalApproval struct {
+	PullRequest string
+	ApprovedBy  string
+	Approved    bool
+}
+
+func (a *ApplyExecutor) checkExternalApproval(ctx *CommandContext, repo models.Repo, pull models.PullRequest) (bool, error) {
+	client := &http.Client{
+		Timeout: time.Second * 1,
+	}
+
+	payload := fmt.Sprintf("{\"repo_owner\": \"%s\", \"repo_name\": \"%s\", \"pull_request\": %d}", repo.Owner, repo.Name, pull.Num)
+	req, err := http.NewRequest("POST", a.ApprovalURL, bytes.NewBuffer([]byte(payload)))
+	req.Header.Set("Content-Type", "application/json")
+
+	if err != nil {
+		return false, err
+	}
+
+	req.Close = true
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.StatusCode == 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, err
+		}
+
+		var approval externalApproval
+		if json.Unmarshal(body, &approval) != nil {
+			return false, err
+		}
+
+		if approval.Approved {
+			return true, nil
+		}
+
+		return false, nil
+	}
+
+	if resp.StatusCode >= 400 || resp.StatusCode < 200 {
+		return false, nil
+	}
+
+	return false, nil
 }
 
 func (a *ApplyExecutor) Execute(ctx *CommandContext) CommandResponse {
@@ -35,6 +93,17 @@ func (a *ApplyExecutor) Execute(ctx *CommandContext) CommandResponse {
 			return CommandResponse{Failure: "Pull request must be approved before running apply."}
 		}
 		ctx.Log.Info("confirmed pull request was approved")
+	}
+
+	if a.RequireExternalApproval {
+		approved, err := a.checkExternalApproval(ctx, ctx.BaseRepo, ctx.Pull)
+		if err != nil {
+			return CommandResponse{Error: errors.Wrap(err, "checking if pull request was approved (external)")}
+		}
+		if !approved {
+			return CommandResponse{Failure: "Pull request must be approved before running apply. (external)"}
+		}
+		ctx.Log.Info("confirmed pull request was approved (external)")
 	}
 
 	repoDir, err := a.Workspace.GetWorkspace(ctx.BaseRepo, ctx.Pull, ctx.Command.Environment)
