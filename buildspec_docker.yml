@@ -7,6 +7,7 @@ phases:
       - docker login -u push $DOCKER_REGISTRY_URL -p $REGISTRY_PUSH_PASSWORD
       - export IMAGE_TAG=$(cat git_hash)
       - export IMAGE="$DOCKER_REGISTRY_URL/$SERVICE_NAME:$IMAGE_TAG"
+      - export ECR_IMAGE="$ECR_URL:$IMAGE_TAG"
   build:
     commands:
       - echo "Listing directory contents"
@@ -15,12 +16,15 @@ phases:
       - echo "Building the Docker image..."          
       - docker build -t $SERVICE_NAME .
       - docker tag $SERVICE_NAME:latest $IMAGE
+      - docker tag $SERVICE_NAME:latest  $ECR_IMAGE
+      
   post_build:
     commands:
       - 'echo "{\"image\": \"$IMAGE\"}" > deploy.json'
       - echo Build completed on `date +'%s'`
       - echo "Pushing the Docker image..."
       - docker push $IMAGE
+      - docker push  $ECR_IMAGE
 artifacts:
   files:
     - deploy.json
