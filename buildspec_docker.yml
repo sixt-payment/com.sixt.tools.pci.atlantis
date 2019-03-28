@@ -22,7 +22,8 @@ phases:
       
   post_build:
     commands:
-      - 'echo "{\"image\": \"$IMAGE\"}" > deploy.json'
+      #- 'echo "{\"image\": \"$IMAGE\"}" > deploy.json'
+      - 'echo "{\"image\": \"$ECR_IMAGE\"}" > deploy.json'
       - echo Build completed on `date +'%s'`
       - echo "Pushing the Docker image..."
       - docker push $IMAGE
