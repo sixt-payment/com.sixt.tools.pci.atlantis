@@ -8,6 +8,7 @@ phases:
       - export IMAGE_TAG=$(cat git_hash)
       - export IMAGE="$DOCKER_REGISTRY_URL/$SERVICE_NAME:$IMAGE_TAG"
       - export ECR_IMAGE="$ECR_URL:$IMAGE_TAG"
+      - export ECR_IMAGE_CLAIR="$ECR_URL:latest"
   build:
     commands:
       - echo "Listing directory contents"
@@ -17,6 +18,7 @@ phases:
       - docker build -t $SERVICE_NAME .
       - docker tag $SERVICE_NAME:latest $IMAGE
       - docker tag $SERVICE_NAME:latest  $ECR_IMAGE
+      - docker tag $SERVICE_NAME:latest  $ECR_IMAGE_CLAIR
       
   post_build:
     commands:
@@ -26,6 +28,7 @@ phases:
       - docker push $IMAGE
       - $(aws ecr get-login --no-include-email --region ${AWS_REGION})
       - docker push  $ECR_IMAGE
+      - docker push  $ECR_IMAGE_CLAIR
 artifacts:
   files:
     - deploy.json
