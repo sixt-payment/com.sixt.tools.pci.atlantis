@@ -24,6 +24,7 @@ phases:
       - echo Build completed on `date +'%s'`
       - echo "Pushing the Docker image..."
       - docker push $IMAGE
+      - $(aws ecr get-login --no-include-email --region ${AWS_REGION})
       - docker push  $ECR_IMAGE
 artifacts:
   files:
