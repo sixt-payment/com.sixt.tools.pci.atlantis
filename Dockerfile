@@ -1,4 +1,4 @@
-FROM alpine:3.10
+FROM alpine:3.12
 LABEL authors="Anubhav Mishra, Luke Kysow"
 LABEL maintainer="anubhav.mishra@hootsuite.com,luke.kysow@hootsuite.com" 
 
