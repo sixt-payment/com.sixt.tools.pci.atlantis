@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM alpine:3.13.1
 LABEL authors="Anubhav Mishra, Luke Kysow"
 LABEL maintainer="anubhav.mishra@hootsuite.com,luke.kysow@hootsuite.com" 
 
@@ -28,9 +28,9 @@ RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap 
     rm -rf /root/.gnupg && rm -rf /var/cache/apk/*
 
 # install terraform binaries
-ENV DEFAULT_TERRAFORM_VERSION=0.12.26
+ENV DEFAULT_TERRAFORM_VERSION=0.12.30
 
-RUN AVAILABLE_TERRAFORM_VERSIONS="0.12.26" && \
+RUN AVAILABLE_TERRAFORM_VERSIONS="0.12.30" && \
     for VERSION in ${AVAILABLE_TERRAFORM_VERSIONS}; do curl -LOk https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
     mkdir -p /usr/local/bin/tf/versions/${VERSION} && \
     unzip terraform_${VERSION}_linux_amd64.zip -d /usr/local/bin/tf/versions/${VERSION} && \
