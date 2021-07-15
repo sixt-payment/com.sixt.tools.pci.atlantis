@@ -9,16 +9,16 @@ RUN addgroup atlantis && \
 ENV ATLANTIS_HOME_DIR=/home/atlantis
 
 # install atlantis dependencies
-ENV DUMB_INIT_VERSION=1.2.0
-ENV GOSU_VERSION=1.10
-RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap openssl py3-pip && pip3 install boto3 &&  ln -s /usr/bin/python3 /usr/bin/python &&\
-    wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
-    chmod +x /bin/dumb-init && \
+# ENV DUMB_INIT_VERSION=1.2.0
+ENV GOSU_VERSION=1.13
+RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap openssl dumb-init py3-pip && pip3 install boto3 &&  ln -s /usr/bin/python3 /usr/bin/python && \
+    #wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
+    #chmod +x /bin/dumb-init && \
     mkdir -p /tmp/build && \
     cd /tmp/build && \
     wget -O gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" && \
     wget -O gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64.asc" && \
-    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
+    gpg --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
     gpg --batch --verify gosu.asc gosu && \
     chmod +x gosu && \
     cp gosu /bin && \
