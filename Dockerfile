@@ -28,9 +28,9 @@ RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap 
     rm -rf /root/.gnupg && rm -rf /var/cache/apk/*
 
 # install terraform binaries
-ENV DEFAULT_TERRAFORM_VERSION=1.0.2
+ENV DEFAULT_TERRAFORM_VERSION=1.7.4
 
-RUN AVAILABLE_TERRAFORM_VERSIONS="1.0.2" && \
+RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4" && \
     for VERSION in ${AVAILABLE_TERRAFORM_VERSIONS}; do curl -LOk https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
     mkdir -p /usr/local/bin/tf/versions/${VERSION} && \
     unzip terraform_${VERSION}_linux_amd64.zip -d /usr/local/bin/tf/versions/${VERSION} && \
