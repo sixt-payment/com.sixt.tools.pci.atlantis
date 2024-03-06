@@ -1,4 +1,4 @@
-FROM 639159760825.dkr.ecr.eu-west-1.amazonaws.com/alpine:3.16
+FROM 639159760825.dkr.ecr.eu-west-1.amazonaws.com/alpine:3.16-amd64
 LABEL authors="Anubhav Mishra, Luke Kysow"
 LABEL maintainer="anubhav.mishra@hootsuite.com,luke.kysow@hootsuite.com" 
 
