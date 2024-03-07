@@ -10,7 +10,7 @@ ENV ATLANTIS_HOME_DIR=/home/atlantis
 
 # install atlantis dependencies
 ENV DUMB_INIT_VERSION=1.2.0
-ENV GOSU_VERSION=1.13
+ENV GOSU_VERSION=1.17
 RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap openssl py3-boto3 && \
     [ ! -e /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python || true && \
     wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
