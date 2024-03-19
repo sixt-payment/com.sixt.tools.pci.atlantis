@@ -37,7 +37,7 @@ RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4" && \
     unzip terraform_${VERSION}_linux_amd64.zip -d /usr/local/bin/tf/versions/${VERSION} && \
     ln -s /usr/local/bin/tf/versions/${VERSION}/terraform /usr/local/bin/terraform${VERSION};rm terraform_${VERSION}_linux_amd64.zip;done && \
     ln -s /usr/local/bin/tf/versions/${DEFAULT_TERRAFORM_VERSION}/terraform /usr/local/bin/terraform
-
+RUN pip3 install boto3
 # copy binary
 COPY atlantis /usr/local/bin/atlantis
 
