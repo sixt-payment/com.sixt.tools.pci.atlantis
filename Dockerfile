@@ -28,6 +28,8 @@ RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap 
     apk del gnupg openssl && \
     rm -rf /root/.gnupg && rm -rf /var/cache/apk/*
 
+RUN apk upgrade curl libcurl
+
 # install terraform binaries
 ENV DEFAULT_TERRAFORM_VERSION=1.7.4
 
