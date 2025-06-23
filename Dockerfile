@@ -29,6 +29,7 @@ RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap 
     rm -rf /root/.gnupg && rm -rf /var/cache/apk/*
 
 RUN apk upgrade curl libcurl
+RUN apk upgrade python3 py3-pip py3-boto3
 
 # install terraform binaries
 ENV DEFAULT_TERRAFORM_VERSION=1.7.4
