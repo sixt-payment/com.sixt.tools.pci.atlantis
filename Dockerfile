@@ -32,7 +32,7 @@ RUN apk upgrade curl libcurl
 RUN apk upgrade python3 py3-pip py3-boto3
 
 # install terraform binaries
-ENV DEFAULT_TERRAFORM_VERSION=1.7.4
+ENV DEFAULT_TERRAFORM_VERSION=1.14.5
 
 RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4 1.14.5" && \
     for VERSION in ${AVAILABLE_TERRAFORM_VERSIONS}; do curl -LOk https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
