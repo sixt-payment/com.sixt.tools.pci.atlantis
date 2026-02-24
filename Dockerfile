@@ -44,7 +44,7 @@ RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4 1.14.5" && \
 # Verify both versions installed
 RUN terraform1.7.4 version && terraform1.14.5 version && terraform version
 
-    RUN pip3 install boto3
+RUN pip3 install boto3
 # copy binary
 COPY atlantis /usr/local/bin/atlantis
 
