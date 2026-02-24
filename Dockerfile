@@ -34,13 +34,17 @@ RUN apk upgrade python3 py3-pip py3-boto3
 # install terraform binaries
 ENV DEFAULT_TERRAFORM_VERSION=1.7.4
 
-RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4" && \
+RUN AVAILABLE_TERRAFORM_VERSIONS="1.7.4 1.14.5" && \
     for VERSION in ${AVAILABLE_TERRAFORM_VERSIONS}; do curl -LOk https://releases.hashicorp.com/terraform/${VERSION}/terraform_${VERSION}_linux_amd64.zip && \
     mkdir -p /usr/local/bin/tf/versions/${VERSION} && \
     unzip terraform_${VERSION}_linux_amd64.zip -d /usr/local/bin/tf/versions/${VERSION} && \
     ln -s /usr/local/bin/tf/versions/${VERSION}/terraform /usr/local/bin/terraform${VERSION};rm terraform_${VERSION}_linux_amd64.zip;done && \
     ln -s /usr/local/bin/tf/versions/${DEFAULT_TERRAFORM_VERSION}/terraform /usr/local/bin/terraform
-RUN pip3 install boto3
+
+# Verify both versions installed
+RUN terraform1.7.4 version && terraform1.14.5 version && terraform version
+
+    RUN pip3 install boto3
 # copy binary
 COPY atlantis /usr/local/bin/atlantis
 
