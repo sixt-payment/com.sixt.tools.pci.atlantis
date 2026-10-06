@@ -18,7 +18,7 @@
 
 # Curated base (its OS layer is already patched fleet-wide by the AI-patch
 # pipeline). ARG so a version bump is a one-liner / --build-arg override.
-ARG BASE_IMAGE=639159760825.dkr.ecr.eu-west-1.amazonaws.com/python:alpine3.22-amd64
+ARG BASE_IMAGE=639159760825.dkr.ecr.eu-west-1.amazonaws.com/python:alpine3.23-amd64
 FROM ${BASE_IMAGE}
 LABEL authors="Anubhav Mishra, Luke Kysow"
 LABEL maintainer="anubhav.mishra@hootsuite.com,luke.kysow@hootsuite.com"
