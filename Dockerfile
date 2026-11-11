@@ -29,25 +29,13 @@ RUN addgroup atlantis && \
 
 ENV ATLANTIS_HOME_DIR=/home/atlantis
 
-# install atlantis dependencies
-ENV DUMB_INIT_VERSION=1.2.0
-ENV GOSU_VERSION=1.17
-RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap openssl py3-boto3 && \
+# install atlantis dependencies. dumb-init and gosu come from the Alpine repos (signed packages,
+# patched with the OS layer) instead of GitHub release downloads, which timed out on 8-9 Nov 2026.
+# /bin/dumb-init symlink keeps the docker-entrypoint.sh shebang working.
+RUN apk add --no-cache ca-certificates curl git unzip bash openssh libcap py3-boto3 dumb-init gosu && \
     [ ! -e /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python || true && \
-    wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
-    chmod +x /bin/dumb-init && \
-    mkdir -p /tmp/build && \
-    cd /tmp/build && \
-    wget -O gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" && \
-    wget -O gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64.asc" && \
-    gpg --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
-    gpg --batch --verify gosu.asc gosu && \
-    chmod +x gosu && \
-    cp gosu /bin && \
-    cd /tmp && \
-    rm -rf /tmp/build && \
-    apk del gnupg openssl && \
-    rm -rf /root/.gnupg && rm -rf /var/cache/apk/*
+    ln -sf /usr/bin/dumb-init /bin/dumb-init && \
+    rm -rf /var/cache/apk/*
 
 # ── OS self-heal: upgrade EVERY apk package each build (no stale hand-list) ───
 # Replaces "apk upgrade curl libcurl" + "apk upgrade python3 py3-pip py3-boto3".
