@@ -34,12 +34,12 @@ ENV DUMB_INIT_VERSION=1.2.0
 ENV GOSU_VERSION=1.17
 RUN apk add --no-cache ca-certificates gnupg curl git unzip bash openssh libcap openssl py3-boto3 && \
     [ ! -e /usr/bin/python ] && ln -s /usr/bin/python3 /usr/bin/python || true && \
-    wget -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
+    wget --tries=10 --waitretry=15 --retry-on-http-error=502,503,504 -O /bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_amd64 && \
     chmod +x /bin/dumb-init && \
     mkdir -p /tmp/build && \
     cd /tmp/build && \
-    wget -O gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" && \
-    wget -O gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64.asc" && \
+    wget --tries=10 --waitretry=15 --retry-on-http-error=502,503,504 -O gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" && \
+    wget --tries=10 --waitretry=15 --retry-on-http-error=502,503,504 -O gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64.asc" && \
     gpg --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4 && \
     gpg --batch --verify gosu.asc gosu && \
     chmod +x gosu && \
