@@ -21,6 +21,16 @@ phases:
       - docker tag $SERVICE_NAME:latest  $ECR_IMAGE
       - docker tag $SERVICE_NAME:latest  $ECR_IMAGE_CLAIR
       
+      # Wiz scan (visibility, NOT a gate here): every CVE is listed; the gate + AI fix happen in Find-Fixes / Approve-Fixes
+      - |
+        if [ -n "${WIZ_CLIENT_ID:-}" ] && [ -n "${WIZ_CLIENT_SECRET:-}" ]; then
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 10 https://downloads.wiz.io/v1/wizcli/latest/wizcli-linux-amd64 -o wizcli && chmod +x wizcli \
+            && ./wizcli auth --id "$WIZ_CLIENT_ID" --secret "$WIZ_CLIENT_SECRET" >/dev/null \
+            && ./wizcli scan container-image "$ECR_IMAGE" --policy PCI-Critical-Fixable,PCI-SENSITIVE-DATA-POLICY,PCI-SECRETS-POLICY,PCI-HIGH-VUL --by-policy-hits=DISABLED --no-color=false --json-output-file=wiz-output.json \
+            || echo "WIZ: policy failed or scan error - not blocking Dockerize; Find-Fixes attempts the AI fix and Approve-Fixes is the gate"
+        else
+          echo "WIZ: credentials not injected - scan skipped"
+        fi
   post_build:
     commands:
       #- 'echo "{\"image\": \"$IMAGE\"}" > deploy.json'
@@ -34,3 +44,4 @@ phases:
 artifacts:
   files:
     - deploy.json
+    - wiz-output.json
